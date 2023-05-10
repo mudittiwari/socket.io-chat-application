@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const Post = require("../models/Post");
-const { verifytoken } = require("../routes/verifyAccessToken");
+const {verifytoken}=require("../routes/verifyAcessToken");
 
 router.post('/createpost', verifytoken, async (req, res) => {
     let { title, image } = req.body;
@@ -21,8 +21,7 @@ router.post('/createpost', verifytoken, async (req, res) => {
 
 
 router.get('/getposts', verifytoken, async (req, res) => {
-    let user = req.query.id;
-    let posts = await Post.find({ user: user });
+    let posts = await Post.find();
     res.status(200).json(posts);
 });
 
@@ -156,6 +155,7 @@ router.get('/getpost',verifytoken,async(req,res)=>{
     }
 });
 
+module.exports = router;
 
 // {
 //     'comment':"cccccccccc",

@@ -10,25 +10,25 @@ const { Server } = require('socket.io');
 const Post = require("./models/Post");
 
 
-
-
+let boolupdate = false;
 function addlike(postid, userid) {
     Post.findOne({ id: postid }, (err, post) => {
         if (err) {
             console.log(err);
-            io.emit('error');
+            io.emit('likeadded', "error");
+            boolupdate = false;
         }
         else {
             let likes = post.likes;
             likes.push(userid);
             post.likes = likes;
-            let temp;
             post.save()
                 .then((post) => {
-
+                    console.log(post);
                     io.emit('likeadded', JSON.stringify(post));
+                    boolupdate = false;
                 })
-                .catch((err) => { io.emit('likeadded', "error"); });
+                .catch((err) => { console.log(err); io.emit('likeadded', "error"); boolupdate = false; });
 
         }
 
@@ -39,7 +39,8 @@ function removelike(postid, userid) {
     Post.findOne({ id: postid }, (err, post) => {
         if (err) {
             console.log(err);
-            io.emit('error');
+            io.emit('likeremoved', "error");
+            boolupdate = false;
         }
         else {
             let likes = post.likes;
@@ -50,31 +51,38 @@ function removelike(postid, userid) {
                 .then((post) => {
 
                     io.emit('likeremoved', JSON.stringify(post));
+                    boolupdate = false;
                 })
-                .catch((err) => { io.emit('likeremoved', "error"); });
+                .catch((err) => { console.log(err); io.emit('likeremoved', "error"); boolupdate = false; });
 
         }
 
     });
 }
 
-async function addcomment(postid, comment, userid,userimage) {
+async function addcomment(postid, comment, userid, userimage, username) {
     let commentobj = {
         user: userid,
         userimage: userimage,
+        username: username,
         comment: comment,
         replies: [],
     }
-    let post = await Post.findOne({ id: postid });
-    let comments = post.comments;
-    comments.push(commentobj);
-    post.comments = comments;
-    post.save()
-        .then((post) => {
+    try {
+        let post = await Post.findOne({ id: postid });
+        let comments = post.comments;
+        comments.push(commentobj);
+        post.comments = comments;
+        post.save()
+            .then((post) => {
 
-            io.emit('commentadded', JSON.stringify(post));
-        })
-        .catch((err) => {io.emit('commentadded', "error"); });
+                io.emit('commentadded', JSON.stringify(post));
+                boolupdate = false;
+            })
+            .catch((err) => { io.emit('commentadded', "error"); boolupdate = false; });
+    } catch (error) {
+        io.emit('commentadded', "error"); boolupdate = false;
+    }
 }
 
 
@@ -111,20 +119,27 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(socket.id);
     socket.on('addlike', (data) => {
-        console.log(data);
-        addlike(data.postid, data.userid);
+        if (!boolupdate) {
+            boolupdate = true;
+            console.log(data);
+            addlike(data.postid, data.userid);
 
+        }
     });
     socket.on('removelike', (data) => {
-        console.log(data);
-        removelike(data.postid, data.userid);
+        if (!boolupdate) {
+            boolupdate = true;
+            console.log(data);
+            removelike(data.postid, data.userid);
+        }
 
     });
     socket.on('addcomment', (data) => {
-        console.log(data);
-        addcomment(data.postid, data.comment, data.userid,data.userimage);
-        // removelike(data.postid, data.userid);
-
+        if (!boolupdate) {
+            boolupdate = true;
+            console.log(data);
+            addcomment(data.postid, data.comment, data.userid, data.userimage, data.username);
+        }
     });
     // socket.on('message', (data) => {
     //     console.log(data);

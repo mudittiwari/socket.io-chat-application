@@ -235,10 +235,26 @@ server.listen(5000, () => {
 // 5. make chat screen page
 // 10 add delete comment feature
 // 11. make friends request page working
-// 12. make profile page working
 // 13. make profile page or other users
 // 14. make edit profile page working
 // 15. send notifications on like,comment,friend request received,friend request accepted,message received
 // 16. make notification page working
 // 17. make chat page working
 // 18.make functionality to delete sent requests,accepted requests,delete friends
+
+
+// projects to make before trip:
+// complete this project
+// make a project to share files using socket.io
+// make a project to implement video and audio calling feature using socket.io and webrtc
+// make a ecommerce website using react and node.js and mongodb
+// make my own portfolio website
+
+
+// projects to make after coming back from trip:
+// make a website to do audio and video editing
+// make a game using socket.io and react.js
+// make a website to do video streaming
+// make a website for algorithm visualizer
+// complete whatsapp web3.0 project
+// implement nft in the game project

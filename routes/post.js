@@ -24,8 +24,23 @@ router.post('/createpost', verifytoken, async (req, res) => {
 
 
 router.get('/getposts', verifytoken, async (req, res) => {
-    let posts = await Post.find();
+    try {
+        let posts = await Post.find();
     res.status(200).json(posts);
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
+router.get("/getuserposts",verifytoken,async(req,res)=>{
+    try {
+        let posts=await Post.find({'user':req.query.id});
+    res.status(200).json(posts);
+        
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
 });
 
 router.delete('/deletepost', verifytoken, async (req, res) => {

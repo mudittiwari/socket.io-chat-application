@@ -7,6 +7,8 @@ const postSchema = new mongoose.Schema({
     image: { type: String, required: true },
     likes: [],
     comments:[],
+    username:{type:String,required:true},
+    userimage:{type:String,required:true},
     user:{type:Number,required:true}
 },{timestamps:true});
 

@@ -3,18 +3,21 @@ const Post = require("../models/Post");
 const {verifytoken}=require("../routes/verifyAcessToken");
 
 router.post('/createpost', verifytoken, async (req, res) => {
-    let { title, image } = req.body;
+    let { title, image,username,userimage } = req.body;
     let user = req.query.id;
     const post = new Post({
         title: title,
         image: image,
         user: user,
+        username:username,
+        userimage:userimage
     });
     try {
         const savedpost = await post.save();
         res.status(200).json(savedpost);
     }
     catch (err) {
+        console.log(err);
         res.status(500).json(err);
     }
 });

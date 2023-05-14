@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const Post = require("./models/Post");
-
+const User = require("./models/User");
 
 let boolupdate = false;
 function addlike(postid, userid) {
@@ -86,6 +86,67 @@ async function addcomment(postid, comment, userid, userimage, username) {
 }
 
 
+async function sendreq(sender, receiver) {
+    try {
+        let user = await User.findOne({ id: sender });
+        let requests = user.friendrequestssent;
+        requests.push(receiver);
+        user.friendrequestssent = requests;
+        user.save()
+            .then(async(userfinal) => {
+                let user2 = await User.findOne({ id: receiver });
+        let requests = user2.friendrequestsreceived;
+        requests.push(sender);
+        user2.friendrequestsreceived = requests;
+        user2.save().then((user2)=>{
+            io.emit('reqsent', JSON.stringify(userfinal));
+            boolupdate = false;
+        }).catch((err)=>{
+            console.log(err);
+            io.emit('reqsent', "error"); 
+            boolupdate = false;
+        });        
+            })
+            .catch((err) => { io.emit('reqsent', "error"); 
+            boolupdate = false; });
+    } catch (error) {
+        io.emit('reqsent', "error"); 
+        boolupdate = false;
+    }
+}
+
+async function acceptreq(sender,receiver)
+{
+    try {
+        let user = await User.findOne({ id: receiver });
+        let requests = user.friendrequestsreceived;
+        requests.splice(requests.indexOf(sender),1);
+        user.friendrequestsreceived = requests;
+        user.friends.push(sender);
+        user.save()
+            .then(async(user) => {
+                let user2 = await User.findOne({ id: sender });
+        let requests = user2.friendrequestssent;
+        requests.splice(requests.indexOf(receiver),1);
+        user.friendrequestssent = requests;
+        user.friends.push(receiver);
+        user2.save().then((userfinal)=>{
+            io.emit('reqaccepted', JSON.stringify(userfinal));
+            boolupdate = false;
+        }).catch((err)=>{
+            console.log(err);
+            io.emit('reqaccepted', "error"); 
+            boolupdate = false;
+        });        
+            })
+            .catch((err) => { io.emit('reqaccepted', "error"); 
+            boolupdate = false; });
+    } catch (error) {
+        io.emit('reqaccepted', "error"); 
+        boolupdate = false;
+    }
+}
+
 app.use(express.json());
 
 dotenv.config();
@@ -141,6 +202,20 @@ io.on('connection', (socket) => {
             addcomment(data.postid, data.comment, data.userid, data.userimage, data.username);
         }
     });
+    socket.on('sendreq', (data) => {
+        if(!boolupdate)
+        {
+            boolupdate = true;
+            sendreq(data.user,data.id);
+        }
+    });
+    socket.on('acceptreq', (data) => {
+        if(!boolupdate)
+        {
+            boolupdate = true;
+            acceptreq(data.user,data.id);
+        }
+    });
     // socket.on('message', (data) => {
     //     console.log(data);
     // }
@@ -155,15 +230,15 @@ server.listen(5000, () => {
 );
 
 // next steps in this project:
-// 1. feature to add profile picture for the user
 // 2. feature to update the profile picture of the user
 // 3. fix routing(if user is logged in then navigate to homepage else navigate to login page)
-// 4. make user search page
 // 5. make chat screen page
-// 6. add post feature(connect to backend)
-// 7. add like feature(connect to backend)
-// 8. add comment feature(connect to backend)
-// 9 . add unlike feature
 // 10 add delete comment feature
-// 11 add comment reply feature
-// 12. show posts from the backend to the frontend
+// 11. make friends request page working
+// 12. make profile page working
+// 13. make profile page or other users
+// 14. make edit profile page working
+// 15. send notifications on like,comment,friend request received,friend request accepted,message received
+// 16. make notification page working
+// 17. make chat page working
+// 18.make functionality to delete sent requests,accepted requests,delete friends

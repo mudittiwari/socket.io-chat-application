@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
   profilepicture: { type: String, default: "" },
   posts:[],
   friends:[],
-  friendrequests:[],
+  friendrequestssent:[],
+  friendrequestsreceived:[],
   messages:[],
   orders:[{type:Object}],
   role:{type : String , default : 'user'}  

@@ -10,17 +10,19 @@ const {verifytoken}=require("../routes/verifyAcessToken");
 //register
 router.post("/register", async (req, res) => {
     console.log(req.body);
-    const { name,username, email, password } = req.body;
+    const { name,username, email, password,image } = req.body;
     const user = new User({
         name:name,
         email:email,
         username:username,
-        password:  cryptojs.AES.encrypt(req.body.password, process.env.PASS_SEC).toString(),
+        password:  cryptojs.AES.encrypt(password, process.env.PASS_SEC).toString(),
+        profilepicture:image,
     });
     try {
         const saveduser = await user.save();
         res.status(200).json(saveduser);
     } catch (err) {
+        console.log(err);
         res.status(500).json(err);
     }
 });
@@ -69,6 +71,15 @@ router.post("/updateuser", verifytoken, async (req, res) => {
 router.get("/getuser", verifytoken, async (req, res) => {
     try {
         const user = await User.findOne({ 'id': Number(req.query.id) });
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
+router.get("/getallusers", verifytoken, async (req, res) => {
+    try {
+        const user = await User.find();
         res.status(200).json(user);
     } catch (error) {
         res.status(500).json(error);

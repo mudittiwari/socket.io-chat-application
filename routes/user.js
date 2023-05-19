@@ -59,6 +59,8 @@ router.post("/updateuser", verifytoken, async (req, res) => {
         .then(User => {
             User.name = req.body.name;
             User.username = req.body.username;
+            User.profilepicture = req.body.profilepicture;
+            User.password = req.body.password;
             User.save()
                 .then(User => res.status(200).json(User))
                 .catch(err => res.status(500).json(err));
@@ -101,20 +103,6 @@ router.post("/removefriend", verifytoken, async (req, res) => {
 });
 
 
-router.post('/updateprofile',verifytoken,async (req,res)=>{
-    let name=req.body.name;
-    let username=req.body.username;
-    let user=await User.findOne({'id':Number(req.query.id)});
-    try {
-        user.name=name;
-        user.username=username;
-        user.save();
-        res.status(200).json(user);
-    }
-    catch (error) {
-        return res.status(500).json(error);
-    }
-});
 
 router.post('/resetpassword',verifytoken,async (req,res)=>{
     let newpassword=req.body.newpassword;

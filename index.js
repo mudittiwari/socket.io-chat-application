@@ -9,7 +9,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const Post = require("./models/Post");
 const User = require("./models/User");
-const jwt=require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const { verifytoken } = require('./routes/verifyAcessToken');
 
 let boolupdate = false;
@@ -95,77 +95,80 @@ async function sendreq(sender, receiver) {
         requests.push(receiver);
         user.friendrequestssent = requests;
         user.save()
-            .then(async(userfinal) => {
+            .then(async (userfinal) => {
                 let user2 = await User.findOne({ id: receiver });
-        let requests = user2.friendrequestsreceived;
-        requests.push(sender);
-        user2.friendrequestsreceived = requests;
-        user2.save().then((user2)=>{
-            const { password, ...others } = userfinal._doc;
-            io.emit('reqsent', JSON.stringify(others));
-            boolupdate = false;
-        }).catch((err)=>{
-            console.log(err);
-            io.emit('reqsent', "error"); 
-            boolupdate = false;
-        });        
+                let requests = user2.friendrequestsreceived;
+                requests.push(sender);
+                user2.friendrequestsreceived = requests;
+                user2.save().then((user2) => {
+                    const { password, ...others } = userfinal._doc;
+                    io.emit('reqsent', JSON.stringify(others));
+                    boolupdate = false;
+                }).catch((err) => {
+                    console.log(err);
+                    io.emit('reqsent', "error");
+                    boolupdate = false;
+                });
             })
-            .catch((err) => { io.emit('reqsent', "error"); 
-            boolupdate = false; });
+            .catch((err) => {
+                io.emit('reqsent', "error");
+                boolupdate = false;
+            });
     } catch (error) {
-        io.emit('reqsent', "error"); 
+        io.emit('reqsent', "error");
         boolupdate = false;
     }
 }
 
-async function acceptreq(sender,receiver)
-{
+async function acceptreq(sender, receiver) {
     try {
         let user = await User.findOne({ id: receiver });
         let requests = user.friendrequestsreceived;
-        requests.splice(requests.indexOf(sender),1);
+        requests.splice(requests.indexOf(sender), 1);
         user.friendrequestsreceived = requests;
         user.friends.push(sender);
         user.save()
-            .then(async(user_) => {
+            .then(async (user_) => {
                 let user2 = await User.findOne({ id: sender });
-        let requests = user2.friendrequestssent;
-        requests.splice(requests.indexOf(receiver),1);
-        user2.friendrequestssent = requests;
-        user2.friends.push(receiver);
-        user2.save().then((userfinal)=>{
-            console.log(user_);
-            const {password,...others}=user_._doc;
-            io.emit('reqaccepted', JSON.stringify(others));
-            boolupdate = false;
-        }).catch((err)=>{
-            console.log(err);
-            io.emit('reqaccepted', "error"); 
-            boolupdate = false;
-        });        
+                let requests = user2.friendrequestssent;
+                requests.splice(requests.indexOf(receiver), 1);
+                user2.friendrequestssent = requests;
+                user2.friends.push(receiver);
+                user2.save().then((userfinal) => {
+                    console.log(user_);
+                    const { password, ...others } = user_._doc;
+                    io.emit('reqaccepted', JSON.stringify(others));
+                    boolupdate = false;
+                }).catch((err) => {
+                    console.log(err);
+                    io.emit('reqaccepted', "error");
+                    boolupdate = false;
+                });
             })
-            .catch((err) => { io.emit('reqaccepted', "error"); 
-            boolupdate = false; });
+            .catch((err) => {
+                io.emit('reqaccepted', "error");
+                boolupdate = false;
+            });
     } catch (error) {
-        io.emit('reqaccepted', "error"); 
+        io.emit('reqaccepted', "error");
         boolupdate = false;
     }
 }
 
-function verifytoken_(token)
-{
-    
-        return jwt.verify(token,process.env.JWT_SEC,(err,user)=>{
-            // console.log(user);
-            if(err)
-            {
-                return err;
-            }
-            else{
-                return JSON.stringify(user);
-            }
-        });
-}
+// function verifytoken_(token)
+// {
+
+//         return jwt.verify(token,process.env.JWT_SEC,(err,user)=>{
+//             // console.log(user);
+//             if(err)
+//             {
+//                 return err;
+//             }
+//             else{
+//                 return JSON.stringify(user);
+//             }
+//         });
+// }
 
 
 
@@ -200,13 +203,35 @@ const io = new Server(server, {
     }
 });
 
+
+const usersmap = {};
 io.on('connection', (socket) => {
-    io.emit('senddetails','');
-    // console.log('a user connected');
+    io.emit('senddetails', '');
+    // this function is called when a pre-logged in user joins the website
     socket.on('details', (data) => {
-        console.log(data);
-        let user=verifytoken_(data);
-        console.log(user);
+        if (data.email && !usersmap.hasOwnProperty(data.email)) {
+            boolupdate = true;
+            usersmap[data.email] = socket.id;
+            // console.log(usersmap);
+        }
+        else if(usersmap.hasOwnProperty(data.email)) {
+            console.log("user already saved");
+        }
+        else {
+            console.log("error");
+        }
+        console.log(usersmap);
+    });
+    //this function is called when a new logged in user joins the website
+    socket.on('newlogin', (data) => {
+        if (data.email && !usersmap.hasOwnProperty(data.email)) {
+            boolupdate = true;
+            usersmap[data.email] = socket.id.toString();
+        }
+        else {
+            console.log("error");
+        }
+        console.log(usersmap);
     });
     socket.on('addlike', (data) => {
         if (!boolupdate) {
@@ -232,18 +257,25 @@ io.on('connection', (socket) => {
         }
     });
     socket.on('sendreq', (data) => {
-        if(!boolupdate)
-        {
+        if (!boolupdate) {
             boolupdate = true;
-            sendreq(data.user,data.id);
+            sendreq(data.user, data.id);
         }
     });
     socket.on('acceptreq', (data) => {
-        if(!boolupdate)
-        {
+        if (!boolupdate) {
             boolupdate = true;
             console.log(data);
-            acceptreq(data.id,data.user);
+            acceptreq(data.id, data.user);
+        }
+    });
+    socket.on('disconnect', () => {
+        for (const key in usersmap) {
+            if (usersmap[key] === socket.id.toString()) {
+                delete usersmap[key];  
+                console.log(key+" disconnected");
+                break;
+            }
         }
     });
     // socket.on('message', (data) => {
@@ -260,13 +292,11 @@ server.listen(5000, () => {
 );
 
 // next steps in this project:
-// 2. feature to update the profile picture of the user
 // 3. fix routing(if user is logged in then navigate to homepage else navigate to login page)
 // 5. make chat screen page
 // 10 add delete comment feature
 // 11. make friends request page working
 // 13. make profile page or other users
-// 14. make edit profile page working
 // 15. send notifications on like,comment,friend request received,friend request accepted,message received
 // 16. make notification page working
 // 17. make chat page working
@@ -288,3 +318,14 @@ server.listen(5000, () => {
 // make a website for algorithm visualizer
 // complete whatsapp web3.0 project
 // implement nft in the game project
+
+
+// user can be on different screens:
+// 1. home screen
+// 2. profile screen
+// 3. search screen
+// 4. notification screen
+// 5. chat screen
+// 6. friendrequests screen
+// 7. edit profile screen
+// on these pages i have to listen for add like socket event, add comment socket event,friend requests socket events

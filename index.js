@@ -9,6 +9,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const Post = require("./models/Post");
 const User = require("./models/User");
+const jwt=require("jsonwebtoken");
+const { verifytoken } = require('./routes/verifyAcessToken');
 
 let boolupdate = false;
 function addlike(postid, userid) {
@@ -99,7 +101,8 @@ async function sendreq(sender, receiver) {
         requests.push(sender);
         user2.friendrequestsreceived = requests;
         user2.save().then((user2)=>{
-            io.emit('reqsent', JSON.stringify(userfinal));
+            const { password, ...others } = userfinal._doc;
+            io.emit('reqsent', JSON.stringify(others));
             boolupdate = false;
         }).catch((err)=>{
             console.log(err);
@@ -124,14 +127,16 @@ async function acceptreq(sender,receiver)
         user.friendrequestsreceived = requests;
         user.friends.push(sender);
         user.save()
-            .then(async(user) => {
+            .then(async(user_) => {
                 let user2 = await User.findOne({ id: sender });
         let requests = user2.friendrequestssent;
         requests.splice(requests.indexOf(receiver),1);
-        user.friendrequestssent = requests;
-        user.friends.push(receiver);
+        user2.friendrequestssent = requests;
+        user2.friends.push(receiver);
         user2.save().then((userfinal)=>{
-            io.emit('reqaccepted', JSON.stringify(userfinal));
+            console.log(user_);
+            const {password,...others}=user_._doc;
+            io.emit('reqaccepted', JSON.stringify(others));
             boolupdate = false;
         }).catch((err)=>{
             console.log(err);
@@ -146,6 +151,24 @@ async function acceptreq(sender,receiver)
         boolupdate = false;
     }
 }
+
+function verifytoken_(token)
+{
+    
+        return jwt.verify(token,process.env.JWT_SEC,(err,user)=>{
+            // console.log(user);
+            if(err)
+            {
+                return err;
+            }
+            else{
+                return JSON.stringify(user);
+            }
+        });
+}
+
+
+
 
 app.use(express.json());
 
@@ -178,7 +201,13 @@ const io = new Server(server, {
 });
 
 io.on('connection', (socket) => {
-    console.log(socket.id);
+    io.emit('senddetails','');
+    // console.log('a user connected');
+    socket.on('details', (data) => {
+        console.log(data);
+        let user=verifytoken_(data);
+        console.log(user);
+    });
     socket.on('addlike', (data) => {
         if (!boolupdate) {
             boolupdate = true;
@@ -213,7 +242,8 @@ io.on('connection', (socket) => {
         if(!boolupdate)
         {
             boolupdate = true;
-            acceptreq(data.user,data.id);
+            console.log(data);
+            acceptreq(data.id,data.user);
         }
     });
     // socket.on('message', (data) => {

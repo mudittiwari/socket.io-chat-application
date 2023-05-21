@@ -60,9 +60,11 @@ router.post("/updateuser", verifytoken, async (req, res) => {
             User.name = req.body.name;
             User.username = req.body.username;
             User.profilepicture = req.body.profilepicture;
-            User.password = req.body.password;
             User.save()
-                .then(User => res.status(200).json(User))
+                .then((User) => {
+                    const { password, ...others } = User._doc;
+                    res.status(200).json(others);
+                })
                 .catch(err => res.status(500).json(err));
 
         })
@@ -73,7 +75,9 @@ router.post("/updateuser", verifytoken, async (req, res) => {
 router.get("/getuser", verifytoken, async (req, res) => {
     try {
         const user = await User.findOne({ 'id': Number(req.query.id) });
-        res.status(200).json(user);
+        const { password, ...others } = user._doc;
+
+        res.status(200).json(others);
     } catch (error) {
         res.status(500).json(error);
     }
@@ -112,7 +116,8 @@ router.post('/resetpassword',verifytoken,async (req,res)=>{
         if(cryptojs.AES.decrypt(user.password,process.env.PASS_SEC).toString(cryptojs.enc.Utf8)==oldpassword){
         user.password=cryptojs.AES.encrypt(newpassword,process.env.PASS_SEC).toString();
         user.save();
-        res.status(200).json(user);
+        const { password, ...others } = user._doc;
+        res.status(200).json(others);
         }
         else{
             res.status(400).json("bad credentials");
